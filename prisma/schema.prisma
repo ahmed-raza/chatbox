@@ -1,0 +1,41 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-py"
+  recursive_type_depth = 5
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int     @id @default(autoincrement())
+  email     String  @unique
+  name      String?
+  password  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  conversations Conversation[] @relation("ConversationUsers")
+  messages  Message[] @relation("UserMessages")
+}
+
+model Conversation {
+  id        Int     @id @default(autoincrement())
+  name      String?
+  users     User[]  @relation("ConversationUsers")
+  messages  Message[] @relation("ConversationMessages")
+}
+
+model Message {
+  id        Int     @id @default(autoincrement())
+  content   String
+  sender    User    @relation("UserMessages", fields: [senderId], references: [id])
+  senderId  Int
+  conversation Conversation @relation("ConversationMessages", fields: [conversationId], references: [id])
+  conversationId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

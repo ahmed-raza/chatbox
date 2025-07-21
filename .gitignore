@@ -44,4 +44,5 @@ web/next-env.d.ts
 # Backend / Python
 venv
 */**/*.db
+*/**/*.db-journal
 */**/__pycache__
