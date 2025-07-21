@@ -2,6 +2,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from backend.connection import manager
 from backend.auth.routes import router as auth_router
+from backend.data.routes import router as data_router
 from backend.config.settings import settings
 import alog
 
@@ -21,6 +22,7 @@ app.add_middleware(
 
 # Include authentication routes
 app.include_router(auth_router, prefix="/api")
+app.include_router(data_router, prefix="/api")
 
 @app.websocket("/ws/{client_id}")
 async def chat_websocket(websocket: WebSocket):

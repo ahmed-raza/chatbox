@@ -2,7 +2,7 @@
 Authentication-related Pydantic schemas
 """
 from typing import Optional
-from pydantic import BaseModel, EmailStr, validator
+from pydantic import BaseModel, EmailStr, field_validator
 import re
 
 
@@ -11,8 +11,8 @@ class UserSignupRequest(BaseModel):
     email: EmailStr
     name: Optional[str] = None
     password: str
-    
-    @validator("password")
+
+    @field_validator("password")
     def validate_password(cls, v):
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters long")
@@ -21,8 +21,8 @@ class UserSignupRequest(BaseModel):
         if not re.search(r"\d", v):
             raise ValueError("Password must contain at least one number")
         return v
-    
-    @validator("name")
+
+    @field_validator("name")
     def validate_name(cls, v):
         if v is not None and len(v.strip()) == 0:
             return None
@@ -44,8 +44,8 @@ class ResetPasswordRequest(BaseModel):
     """Reset password request schema"""
     token: str
     new_password: str
-    
-    @validator("new_password")
+
+    @field_validator("new_password")
     def validate_password(cls, v):
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters long")
@@ -60,8 +60,8 @@ class ChangePasswordRequest(BaseModel):
     """Change password request schema (for authenticated users)"""
     current_password: str
     new_password: str
-    
-    @validator("new_password")
+
+    @field_validator("new_password")
     def validate_password(cls, v):
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters long")
@@ -91,7 +91,7 @@ class UserResponse(BaseModel):
     name: Optional[str] = None
     created_at: str
     updated_at: str
-    
+
     class Config:
         from_attributes = True
 
