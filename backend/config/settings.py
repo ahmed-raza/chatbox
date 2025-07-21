@@ -2,18 +2,32 @@
 Application configuration settings
 """
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# Get the project root directory (parent of backend directory)
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+
+# Load environment variables from .env file in project root
+load_dotenv(PROJECT_ROOT / ".env")
 
 
 class Settings:
     """Application settings loaded from environment variables"""
 
     def __init__(self):
-        # Database
-        self.database_url = os.getenv("DATABASE_URL", "file:./prisma/dev.db")
+        # Database - handle path resolution to always use prisma directory
+        db_url = os.getenv("DATABASE_URL", "file:./dev.db")
+
+        if db_url.startswith("file:./"):
+            # Extract filename from URL
+            db_filename = db_url.replace("file:./", "")
+            # Always put database in prisma directory
+            db_file = PROJECT_ROOT / "prisma" / db_filename
+            self.database_url = f"file:{db_file}"
+        else:
+            # Use the URL as-is (for absolute paths)
+            self.database_url = db_url
 
         # JWT Settings
         self.jwt_secret_key = os.getenv("JWT_SECRET_KEY")

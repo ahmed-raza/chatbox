@@ -22,11 +22,6 @@ app.add_middleware(
 # Include authentication routes
 app.include_router(auth_router, prefix="/api")
 
-
-@app.get('/')
-async def root():
-    return {"message": "Works!"}
-
 @app.websocket("/ws/{client_id}")
 async def chat_websocket(websocket: WebSocket):
     await manager.connect(websocket)
