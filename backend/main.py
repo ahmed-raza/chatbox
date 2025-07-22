@@ -1,9 +1,13 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends
+from backend.auth.dependencies import get_current_user
+from backend.schemas.auth import UserResponse
 from fastapi.middleware.cors import CORSMiddleware
 from backend.connection import manager
 from backend.auth.routes import router as auth_router
 from backend.data.routes import router as data_router
+from backend.conversation.routes import router as conversation_router
 from backend.config.settings import settings
+from backend.conversation.chat import ChatService
 import alog
 
 app = FastAPI(
@@ -23,15 +27,29 @@ app.add_middleware(
 # Include authentication routes
 app.include_router(auth_router, prefix="/api")
 app.include_router(data_router, prefix="/api")
+app.include_router(conversation_router, prefix="/api")
 
-@app.websocket("/ws/{client_id}")
-async def chat_websocket(websocket: WebSocket):
-    await manager.connect(websocket)
-    client_id = websocket.path_params["client_id"]
-    alog.info(f"Client ID: {client_id}")
+chat_service = ChatService()
+
+@app.websocket("/ws/{conversation_id}")
+async def chat_websocket(websocket: WebSocket, conversation_id: str):
+    await manager.connect(conversation_id, websocket)
+
+    user_id = websocket.query_params.get("user_id") if websocket.query_params else None
+    if user_id:
+        user_id = int(user_id)  # Convert to int since User.id is int
+
+    alog.info(f"User {user_id} connected to conversation {conversation_id}")
+
     try:
         while True:
             data = await websocket.receive_text()
-            await manager.broadcast(data)
+
+            alog.info(f"User {user_id} sent message: {data}")
+
+            message = await chat_service.add_message(conversation_id, user_id, data)
+
+            await manager.broadcast(conversation_id, data, sender=websocket)
     except WebSocketDisconnect:
-        manager.disconnect(websocket)
+        manager.disconnect(conversation_id, websocket)
+        alog.info(f"User {user_id} disconnected from conversation {conversation_id}")
