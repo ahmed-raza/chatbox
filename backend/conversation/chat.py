@@ -1,56 +1,43 @@
-from backend.services.auth_service import auth_service
+from backend.utils.database import get_db_session
 import alog
 
 class ChatService:
     """Chat and message service"""
 
     async def create_conversation(self, user_ids: list[int]):
-        try:
-            await auth_service.connect_db()
-            return await auth_service.db.conversation.create(
+        async with get_db_session() as db:
+            return await db.conversation.create(
                 data={"users": {"connect": [{"id": uid} for uid in user_ids]}}
             )
-        finally:
-            await auth_service.disconnect_db()
 
     async def get_conversation(self, conversation_id: str):
-        try:
-            await auth_service.connect_db()
-            return await auth_service.db.conversation.find_unique(
+        async with get_db_session() as db:
+            return await db.conversation.find_unique(
                 where={"id": conversation_id},
                 include={"users": True, "messages": {"include": {"sender": True}}}
             )
-        finally:
-            await auth_service.disconnect_db()
 
     async def list_conversations(self, user_id: int):
-        try:
-            await auth_service.connect_db()
-            return await auth_service.db.conversation.find_many(
+        async with get_db_session() as db:
+            return await db.conversation.find_many(
                 where={"users": {"some": {"id": user_id}}},
                 include={"users": True, "messages": {"orderBy": {"createdAt": "desc"}}}
             )
-        finally:
-            await auth_service.disconnect_db()
 
     async def add_message(self, conversation_id: str, sender_id: int, content: str):
-        try:
-            await auth_service.connect_db()
+        async with get_db_session() as db:
             alog.info(f"Adding message to conversation {conversation_id} sender {sender_id} content {content}")
-            return await auth_service.db.message.create(
+            return await db.message.create(
                 data={
                     "content": content,
                     "sender": {"connect": {"id": sender_id}},
                     "conversation": {"connect": {"id": conversation_id}}
                 }
             )
-        finally:
-            await auth_service.disconnect_db()
 
     async def get_messages(self, conversation_id: str, current_user_id: int = None):
-        try:
-            await auth_service.connect_db()
-            fetch_messages = await auth_service.db.message.find_many(
+        async with get_db_session() as db:
+            fetch_messages = await db.message.find_many(
                 where={"conversationId": conversation_id},
                 include={"sender": True},
                 order={"createdAt": "asc"}
@@ -66,5 +53,3 @@ class ChatService:
                 for message in fetch_messages
             ]
             return messages
-        finally:
-            await auth_service.disconnect_db()

@@ -20,12 +20,9 @@ function ChatPageContent() {
 
     const fetchMessages = async () => {
         try {
-            let auth_token = '';
             const token = localStorage.getItem('auth_tokens')
-            if (token) {
-                auth_token = JSON.parse(token).access_token
-                console.log(auth_token)
-            } else {
+            const auth_token = token && JSON.parse(token).access_token
+            if (!auth_token) {
                 return;
             }
             const response = await fetch(`http://127.0.0.1:8000/api/chat/messages/${conversation_id}`, {
@@ -42,6 +39,9 @@ function ChatPageContent() {
 
     useEffect(() => {
         if (!user?.id) return;
+
+        fetchMessages();
+
         ws.current = new WebSocket(`ws://127.0.0.1:8000/ws/${conversation_id}?user_id=${user?.id}`);
 
         ws.current.onmessage = (event) => {
@@ -67,10 +67,6 @@ function ChatPageContent() {
         ]);
     };
 
-    const handleRefresh = () => {
-        fetchMessages();
-    }
-
     return (
         <div className="flex flex-col h-[calc(100vh-4rem)] max-w-2xl mx-auto bg-white border rounded-md shadow mt-4">
             {/* Chat Header */}
@@ -79,7 +75,6 @@ function ChatPageContent() {
                     Welcome, {user?.name || user?.email}!
                 </h1>
                 <p className="text-sm text-gray-600">Chat with other users</p>
-                <button className="text-gray-600 border-amber-300 bg-amber-500 p-6" onClick={handleRefresh}>Refresh</button>
             </div>
 
             {/* Chat messages */}

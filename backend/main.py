@@ -8,12 +8,30 @@ from backend.data.routes import router as data_router
 from backend.conversation.routes import router as conversation_router
 from backend.config.settings import settings
 from backend.conversation.chat import ChatService
+from backend.utils.database import get_database, disconnect_database
+from contextlib import asynccontextmanager
 import alog
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Application lifespan manager for startup and shutdown events
+    """
+    # Startup: Initialize database connection
+    alog.info("Starting up application...")
+    await get_database()  # This will create and connect the database
+
+    yield
+
+    # Shutdown: Clean up database connection
+    alog.info("Shutting down application...")
+    await disconnect_database()
 
 app = FastAPI(
     title=settings.app_name,
     description="Chat Application API with Authentication",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 app.add_middleware(
